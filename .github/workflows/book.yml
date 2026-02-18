@@ -2,7 +2,7 @@ name: Book Badminton Slot
 
 on:
   schedule:
-    # 8:59:50 PM IST = 3:29:50 PM UTC — start 10s early for warmup
+    # 8:59 PM IST = 3:29 PM UTC — start early for setup + warmup
     - cron: '29 15 * * *'
   workflow_dispatch:
 
@@ -22,10 +22,47 @@ jobs:
     - name: Install dependencies
       run: npm ci
 
+    - name: Install Playwright browser
+      run: npx playwright install chromium --with-deps
+
+    - name: Refresh auth tokens
+      id: refresh
+      env:
+        AT: ${{ secrets.AT }}
+        ST: ${{ secrets.ST }}
+      run: |
+        # Run refresh script — captures fresh tokens from stdout
+        OUTPUT=$(node refreshTokens.js 2>&1 | tee /dev/stderr | grep -E '^FRESH_')
+        FRESH_AT=$(echo "$OUTPUT" | grep FRESH_AT | cut -d= -f2-)
+        FRESH_ST=$(echo "$OUTPUT" | grep FRESH_ST | cut -d= -f2-)
+        # Use fresh tokens if available, fall back to original
+        if [ -n "$FRESH_AT" ]; then
+          echo "AT=${FRESH_AT}" >> $GITHUB_ENV
+        else
+          echo "AT=${AT}" >> $GITHUB_ENV
+        fi
+        if [ -n "$FRESH_ST" ]; then
+          echo "ST=${FRESH_ST}" >> $GITHUB_ENV
+        else
+          echo "ST=${ST}" >> $GITHUB_ENV
+        fi
+
+    - name: Update secrets if tokens changed
+      if: success()
+      env:
+        GH_TOKEN: ${{ secrets.GH_PAT }}
+      run: |
+        # Only update if we have a PAT with secrets access
+        if [ -n "$GH_TOKEN" ]; then
+          gh secret set AT --body "${{ env.AT }}" 2>/dev/null || true
+          gh secret set ST --body "${{ env.ST }}" 2>/dev/null || true
+        fi
+      continue-on-error: true
+
     - name: Wait until exactly 9:00 PM IST
       run: |
         # Target: 15:30:00 UTC = 21:00:00 IST
-        TARGET=$(date -u -d "today 15:30:00" +%s 2>/dev/null || date -u -j -f "%Y-%m-%d %H:%M:%S" "$(date -u +%Y-%m-%d) 15:30:00" +%s)
+        TARGET=$(date -u -d "today 15:30:00" +%s)
         NOW=$(date +%s)
         WAIT=$((TARGET - NOW))
         if [ $WAIT -gt 0 ] && [ $WAIT -lt 120 ]; then
@@ -36,6 +73,4 @@ jobs:
     - name: Book Badminton Slot
       env:
         API_KEY: ${{ secrets.API_KEY }}
-        ST: ${{ secrets.ST }}
-        AT: ${{ secrets.AT }}
       run: node bookCult.js

@@ -1,17 +1,18 @@
 {
-  "name": "cultfit-automation",
-  "version": "1.0.0",
-  "main": "boolCult.js",
+  "name": "cultfit-booker",
+  "version": "2.0.0",
+  "main": "bookCult.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "book": "node bookCult.js",
+    "refresh": "node refreshTokens.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": "",
+  "description": "Auto-book badminton slots at cult.fit",
   "dependencies": {
     "axios": "^1.9.0",
     "dotenv": "^16.5.0",
-    "node-cron": "^3.0.3"
+    "playwright": "^1.58.2"
   }
 }

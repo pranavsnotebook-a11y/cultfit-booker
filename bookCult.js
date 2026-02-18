@@ -1,5 +1,4 @@
-require('dotenv').config();
-const http = require('http');
+try { require('dotenv').config(); } catch {}
 const https = require('https');
 const axios = require('axios');
 
