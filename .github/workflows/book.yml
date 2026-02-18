@@ -1,0 +1,41 @@
+name: Book Badminton Slot
+
+on:
+  schedule:
+    # 8:59:50 PM IST = 3:29:50 PM UTC — start 10s early for warmup
+    - cron: '29 15 * * *'
+  workflow_dispatch:
+
+jobs:
+  book-slot:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v4
+
+    - name: Set up Node
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Wait until exactly 9:00 PM IST
+      run: |
+        # Target: 15:30:00 UTC = 21:00:00 IST
+        TARGET=$(date -u -d "today 15:30:00" +%s 2>/dev/null || date -u -j -f "%Y-%m-%d %H:%M:%S" "$(date -u +%Y-%m-%d) 15:30:00" +%s)
+        NOW=$(date +%s)
+        WAIT=$((TARGET - NOW))
+        if [ $WAIT -gt 0 ] && [ $WAIT -lt 120 ]; then
+          echo "Sleeping ${WAIT}s until 9:00 PM IST..."
+          sleep $WAIT
+        fi
+
+    - name: Book Badminton Slot
+      env:
+        API_KEY: ${{ secrets.API_KEY }}
+        ST: ${{ secrets.ST }}
+        AT: ${{ secrets.AT }}
+      run: node bookCult.js
