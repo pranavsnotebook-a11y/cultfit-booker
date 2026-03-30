@@ -53,7 +53,7 @@ async function scheduleBook() {
     if (!dateList?.length) throw new Error('No dates');
 
     const lastDay = dateList[dateList.length - 1];
-    // Prefer 7PM slot, then fallbacks, then any AVAILABLE
+    // Prefer 7PM slot, then fallbacks
     const target =
         lastDay.classByTimeList.find(s => String(s.classes[0].id) === TARGET_SLOT_ID && s.classes[0].state === 'AVAILABLE') ||
         lastDay.classByTimeList.find(s => FALLBACK_SLOT_IDS.includes(String(s.classes[0].id)) && s.classes[0].state === 'AVAILABLE');
